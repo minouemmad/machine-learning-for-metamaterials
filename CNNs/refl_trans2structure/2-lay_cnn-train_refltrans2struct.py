@@ -112,10 +112,10 @@ num_mat = 5
 num_ang = 3
 num_lay = 2
 num_wave = 200
-(ml1,ml2,ml3,ml4,ml5,th,ang,rp,rs,tp,ts,psi,delta) = readin_data('/home/arl92/Documents/newdata/data_rte_gen2lay5mat_0ge_240000n_v-tma_20201112.h5',num_mat,num_ang,num_lay,num_wave)
+(ml1,ml2,ml3,ml4,ml5,th,ang,rp,rs,tp,ts,psi,delta) = readin_data('data_generation\\Data\\data_rte_gen2lay5mat_100n_v-tma.h5',num_mat,num_ang,num_lay,num_wave)
 
 #directort to save data
-dr = '/home/arl92/Documents/newdata/rt2mt/'
+dr = 'data'
 
 #ranges for the independent datasets, recommended most data in the training set
 #then split the data
@@ -129,27 +129,27 @@ te = va+10000 #test
 
 #the spectra need to be reshaped from [spec(ang1),spec(ang2),...] to [spec;angle] 2-d matrix
 #this does not seem particularly efficent but it works
- tr_p = np.zeros((tr,num_wave,num_ang))
- tr_d = np.zeros((tr,num_wave,num_ang))
- p = np.transpose(psir)
- d = np.transpose(deltar)
- for i in range(tr):
+tr_p = np.zeros((tr,num_wave,num_ang))
+tr_d = np.zeros((tr,num_wave,num_ang))
+p = np.transpose(psir)
+d = np.transpose(deltar)
+for i in range(tr):
      tr_p[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
      tr_d[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
 
- va_p = np.zeros((va-tr,num_wave,num_ang))
- va_d = np.zeros((va-tr,num_wave,num_ang))
- p = np.transpose(psiv)
- d = np.transpose(deltav)
- for i in range(va-tr):
+va_p = np.zeros((va-tr,num_wave,num_ang))
+va_d = np.zeros((va-tr,num_wave,num_ang))
+p = np.transpose(psiv)
+d = np.transpose(deltav)
+for i in range(va-tr):
      va_p[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
      va_d[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
 
- te_p = np.zeros((te-va,num_wave,num_ang))
- te_d = np.zeros((te-va,num_wave,num_ang))
- p = np.transpose(psie)
- d = np.transpose(deltae)
- for i in range(te-va):
+te_p = np.zeros((te-va,num_wave,num_ang))
+te_d = np.zeros((te-va,num_wave,num_ang))
+p = np.transpose(psie)
+d = np.transpose(deltae)
+for i in range(te-va):
      te_p[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
      te_d[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
    
@@ -313,7 +313,7 @@ def define_model(x):
     #the loss weights can be used to tune the relative importance of output data . 
     #I find that increasing the loss weight for the thickness layer tends to improve fitting,
     #since there loss fuctions are different for materials and thicknesses
-model.compile(optimizer='adam',loss=['mse','categorical_crossentropy','categorical_crossentropy'],metrics = ['mse','accuracy'],loss_weights=[2,1,1])
+    model.compile(optimizer='adam',loss=['mse','categorical_crossentropy','categorical_crossentropy'],metrics = ['mse','accuracy'],loss_weights=[2,1,1])
     model.summary()
 
     #model name can be anything you want

@@ -1,5 +1,5 @@
 #reflect/trans --> structure CNN
-#3 layer structures
+#2 layer structures
 
 
 import warnings
@@ -63,9 +63,6 @@ def readin_data(filename,nmat,nang,nlay,nwave):
     ith +=nmat
     ml2 = (arrd[:,itl:ith])
     itl=ith
-    ith +=nmat
-    ml3 = (arrd[:,itl:ith])
-    itl=ith
     ith +=nlay
     th = (arrd[:,itl:ith])
     itl=ith
@@ -86,19 +83,18 @@ def readin_data(filename,nmat,nang,nlay,nwave):
     itl=ith
     delta = (arrd[:,itl:])
     f.close()
-
+    
     #rescale the input data
     #usually just rescaling angles, thicknesses, psi and delta is OK
     psi = resc_psi(psi)
     delta = resc_delt(delta)
     th = resc_th(th)
-    return (ml1,ml2,ml3,th,theta,rp,rs,tp,ts,psi,delta)
+    return (ml1,ml2,th,theta,rp,rs,tp,ts,psi,delta)
 
 #split the input arrays for multiple independent training / validation sets
-def split_data(m1,m2,m3,th,ang,rp,rs,tp,ts,psi,delta,mn,mx):
+def split_data(m1,m2,th,ang,rp,rs,tp,ts,psi,delta,mn,mx):
     tr_m1=m1[mn:mx,:]
     tr_m2=m2[mn:mx,:]
-    tr_m3=m3[mn:mx,:]
     tr_th=th[mn:mx,:]
     tr_ang=ang[mn:mx,:]
     tr_p=psi[mn:mx,:]
@@ -107,30 +103,38 @@ def split_data(m1,m2,m3,th,ang,rp,rs,tp,ts,psi,delta,mn,mx):
     tr_rs=rs[mn:mx,:]
     tr_tp=tp[mn:mx,:]
     tr_ts=ts[mn:mx,:]
-    return (tr_m1,tr_m2,tr_m3,tr_th,tr_ang,tr_rp,tr_rs,tr_tp,tr_ts,tr_p,tr_d)
+    return (tr_m1,tr_m2,tr_th,tr_ang,tr_rp,tr_rs,tr_tp,tr_ts,tr_p,tr_d)
 
 
 #read in data from file with the readin_data fcn
 #you need to update the num_mat, ect.. variables with your choices from the generator program
 num_mat = 5
 num_ang = 3
-num_lay = 3
+num_lay = 2
 num_wave = 200
-(ml1,ml2,ml3,ml4,ml5,th,ang,rp,rs,tp,ts,psi,delta) = readin_data('C:\\Users\\maemmad\\Desktop\\machine-learning-for-metamaterials-1\\data_generation\\Data\\data_rte_gen3lay5mat_100n_v-tma.h5',num_mat,num_ang,num_lay,num_wave)
 
+# Unpacking based on the actual number of return values
+(ang,ml1,ml2,ml3,ml4,ml5,th,rp,rs,tp,ts,psi,delta) = readin_data(
+    'data_generation\\Data\\data_rte_gen2lay5mat_100n_v-tma.h5',
+    num_mat, num_ang, num_lay, num_wave
+)
 
-#directort to save data
-dr = '/home/arl92/Documents/newdata/rt2mt/'
+# Directory to save data
+dr = 'data'
 
-#ranges for the independent datasets, recommended most data in the training set
-#then split the data
-tr = 200000   #training
-va = tr+10000 #validation
-te = va+10000 #test
+# Define the size of the dataset based on available data
+total_data_points = 100
+tr = 60  # 60% for training
+va = tr + 20  # 20% for validation
+te = va + 20  # 20% for testing
 
-(m1r,m2r,m3r,thr,angr,rpr,rsr,tpr,tsr,psir,deltar) = split_data(ml1,ml2,ml3,th,ang,rp,rs,tp,ts,psi,delta,0,tr)
-(m1v,m2v,m3v,thv,angv,rpv,rsv,tpv,tsv,psiv,deltav) = split_data(ml1,ml2,ml3,th,ang,rp,rs,tp,ts,psi,delta,tr,va)
-(m1e,m2e,m3e,the,ange,rpe,rse,tpee,tse,psie,deltae) = split_data(ml1,ml2,ml3,th,ang,rp,rs,tp,ts,psi,delta,va,te)
+# Ensure the total split sizes do not exceed the dataset size
+assert te <= total_data_points, "The sum of training, validation, and testing datasets should not exceed the total number of entries in your dataset."
+
+# Split the data
+(m1r, m2r, thr, angr, rpr, rsr, tpr, tsr, psir, deltar) = split_data(mats, l, ang, Rp, Rs, Tp, Ts, Ellipsometric, 0, tr)
+(m1v, m2v, thv, angv, rpv, rsv, tpv, tsv, psiv, deltav) = split_data(mats, l, ang, Rp, Rs, Tp, Ts, Ellipsometric, tr, va)
+(m1e, m2e, the, ange, rpe, rse, tpee, tse, psie, deltae) = split_data(mats, l, ang, Rp, Rs, Tp, Ts, Ellipsometric, va, te)
 
 #the spectra need to be reshaped from [spec(ang1),spec(ang2),...] to [spec;angle] 2-d matrix
 #this does not seem particularly efficent but it works
@@ -306,24 +310,23 @@ def define_model(x):
 
     #output nodes
     #thickness is a number in so there is no activation
-    thout = Dense(3,activation=None)(t)
+    thout = Dense(2,activation=None)(t)
     #materials guesses a probability array for each material
     #real material is always a normalized array with 1 at the material index i.e. [0 1 0 0 0]
     mout1 = Dense(5,activation='softmax')(m)
     mout2 = Dense(5,activation='softmax')(m)
-    mout3 = Dense(5,activation='softmax')(m)
 
     #define the model
-    model = Model([rpin,rsin,tpin,tsin],[thout,mout1,mout2,mout3])
+    model = Model([rpin,rsin,tpin,tsin],[thout,mout1,mout2])
     # compile the model using the adam optimizer and appropriate loss functions
     #the loss weights can be used to tune the relative importance of output data . 
     #I find that increasing the loss weight for the thickness layer tends to improve fitting,
     #since there loss fuctions are different for materials and thicknesses
-    model.compile(optimizer='adam',loss=['mse','categorical_crossentropy','categorical_crossentropy','categorical_crossentropy'],metrics = ['mse','accuracy'],loss_weights=[2,1,1,1])
+    model.compile(optimizer='adam',loss=['mse','categorical_crossentropy','categorical_crossentropy'],metrics = ['mse','accuracy'],loss_weights=[2,1,1])
     model.summary()
 
     #model name can be anything you want
-    modname = dr+'general_3lay4matinverse_model_v-tma_convolution_rprstpts_'+str(st)+'step_'+date.strftime("%Y")+date.strftime("%m")+date.strftime("%d")
+    modname = dr+'general_2lay4matinverse_model_v-tma_convolution_rprstpts_'+str(st)+'step_'+date.strftime("%Y")+date.strftime("%m")+date.strftime("%d")
     #print the model summary to file for records, the modelname in log also helps with identificaiton of the log files
     print('-'*57)
     print(modname)
@@ -356,13 +359,14 @@ def fit_fcn(x):
     #fitting based on independent training and validation sets
     #the lr callback is necessary to decay the learning rate as a function of epoch
     #batch size can be tuned as necessary
-    history = model.fit([tr_rp,tr_rs,tr_tp,tr_ts],[thr,m1r,m2r,m3r],epochs=leng,batch_size=128,verbose=2,validation_data = ([va_rp,va_rs,va_tp,va_ts],[thv,m1v,m2v,m3v]),callbacks=[lr])
+    history = model.fit([tr_rp,tr_rs,tr_tp,tr_ts],[thr,m1r,m2r],epochs=leng,batch_size=128,verbose=2,validation_data = ([va_rp,va_rs,va_tp,va_ts],[thv,m1v,m2v]),callbacks=[lr])
+
 
     #save model for later uses
     model.save(modname)
 
     #evaluate and print stats on the model fit to the log file
-    (te_loss) = model.evaluate([te_rp,te_rs,te_tp,te_ts],[the,m1e,m2e,m3e])
+    (te_loss) = model.evaluate([te_rp,te_rs,te_tp,te_ts],[the,m1e,m2e])
     print(te_loss)
     
     #this can be uncommented to save a plot of the learning rate decay over training epoch
@@ -394,7 +398,8 @@ global model
 st=0
 
 #hyperparameters for building the model
-hparams = np.array([1,0,1238,397,286,0.02916595195364,0.008747100295765])
+hparams = np.array([2,2,379,315,601,0.038915798772616,0.005493252183191])
 
 #fit the function using the described hyperparameters
 fit_fcn(hparams)
+
