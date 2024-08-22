@@ -26,7 +26,7 @@ import numpy as np
 def reflect_amp(rho, ang_of_inc, wavelength, n, l, n_cover, n_subst):
     #calculate parameters from the user input
     #wavenumber
-    k = 2*np.pi/wavelength;
+    k = 2*np.pi/wavelength
     #impedance of FS, ohms
     z0 = 376.730313667
     #direction cosines
@@ -68,7 +68,7 @@ def reflect_amp(rho, ang_of_inc, wavelength, n, l, n_cover, n_subst):
 def trans_amp(rho, ang_of_inc, wavelength, n, l, n_cover, n_subst):
     #calculate parameters from the user input
     #wavenumber
-    k = 2*np.pi/wavelength;
+    k = 2*np.pi/wavelength
     #impedance of FS, ohms
     z0 = 376.730313667
     #direction cosines
@@ -113,7 +113,7 @@ def ellips(ang_of_inc, wavelength, n, l, n_cover, n_subst):
 #         return(90.,90.)
     #calculate parameters from the user input
     #wavenumber
-    k = 2*np.pi/wavelength;
+    k = 2*np.pi/wavelength
     #impedance of FS, ohms
     z0 = 376.730313667
      #direction cosines
