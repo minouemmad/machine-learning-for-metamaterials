@@ -12,29 +12,53 @@ import multiprocessing
 from tqdm import tqdm_notebook as tqdm
 from numba import jit
 from scipy.optimize import least_squares
+import pandas as pd
+
+import os
+
 
 from tensorflow.python.client import device_lib
 print(device_lib.list_local_devices())
 
-
-
-#label the main directory and an additional folder where you would like to save the output
-#all files should be in this directory
-dr = '/home/arl92/Documents/newdata/mse_space/tanh/'
-dr_save = '/home/arl92/Documents/newdata/mse_space/tanh/3-layer/results-even/'
+dr = 'C:\\Users\\maemmad\\Desktop\\'
+dr_save ='C:\\Users\\maemmad\\Desktop\\machine-learning-for-metamaterials-1\\3-layer'
 
 #import materials and define wavelength
 #these parameters are the same found in the CNN data generation program
 wave = np.linspace(450,950,200)*1E-9
+ang = np.array([25, 45, 65])  # Define angles at 25°, 45°, and 65°
+
+# #materials
+# ti = bb.nk_material('Ti',wave)
+# pt = bb.nk_material('Pt',wave)
+# au = bb.nk_material('Au',wave)
+
+# d_tio2 = pd.read_csv(dr+'machine-learning-for-metamaterials-1\\g\\tio2.csv')
+# tio2 = pd.read_csv(dr+'machine-learning-for-metamaterials-1\\g\\tio2.csv')
+# ito = pd.read_csv(dr+'machine-learning-for-metamaterials-1\\g\\ito.csv') #file containing RI constants taken from the dielectric_materials module
+
+# gl = di.nk_Cauchy_Urbach(wave,1.55,0.005) #decent theoretical glass model based on cauchy disperision and previous experimental fits
+# ito = ito.values
+# tio2 = tio2.values
+
+
+# #define the materials array
+# materials = np.array([ti,pt,au])
 
 #materials
 ag = bb.nk_material('Ag',wave)
 au = bb.nk_material('Au',wave)
-al2o3 = np.loadtxt(dr+'alumina.txt').view(complex) #file containing RI constants taken from the dielectric_materials module
+al2o3 = np.genfromtxt(dr+'machine-learning-for-metamaterials-1\\g\\al2o3.csv', delimiter=',')
+#file containing RI constants taken from the dielectric_materials module
 #identical to calling al2o3 = di.nk_material('al2o3',wave) for these wavelengths
-d_tio2 = np.loadtxt(dr+'tio2.txt') #file containing RI constants taken from the dielectric_materials module
+# Convert the data to complex refractive indices
+al2o3_ri = np.array([complex(r, i) for i, r, w in al2o3])
+
+#file containing RI constants taken from the dielectric_materials module
+#identical to calling al2o3 = di.nk_material('al2o3',wave) for these wavelengths
+d_tio2 = np.loadtxt(dr+'machine-learning-for-metamaterials-1\\g\\tio2.csv') #file containing RI constants taken from the dielectric_materials module
 tio2 = d_tio2[0,:]+1j*d_tio2[1,:]
-ito = np.loadtxt(dr+'ito.txt').view(complex) #file containing RI constants taken from the dielectric_materials module
+ito = np.loadtxt(dr+'machine-learning-for-metamaterials-1\\g\\ito.csv').view(complex) #file containing RI constants taken from the dielectric_materials module
 
 gl = di.nk_Cauchy_Urbach(wave,1.55,0.005) #decent theoretical glass model based on cauchy disperision and previous experimental fits
 
@@ -47,10 +71,10 @@ n_super = 1.
 
 #data is saved in individual text files
 #these are the 'ground truth' (drawn) spectra to which the CNN is attempting to optimize
-rpt = np.loadtxt(dr+'rp.txt')
-rst = np.loadtxt(dr+'rs.txt')
-tpt = np.loadtxt(dr+'tp.txt')
-tst = np.loadtxt(dr+'ts.txt')
+rpt = np.loadtxt(dr+'machine-learning-for-metamaterials-1\\mse_space\\tanh_lpf\\rp.txt')
+rst = np.loadtxt(dr+'machine-learning-for-metamaterials-1\\mse_space\\tanh_lpf\\rs.txt')
+tpt = np.loadtxt(dr+'machine-learning-for-metamaterials-1\\mse_space\\tanh_lpf\\tp.txt')
+tst = np.loadtxt(dr+'machine-learning-for-metamaterials-1\\mse_space\\tanh_lpf\\ts.txt')
 
 
 num_mat = 5 #number of materials probed by the system
@@ -143,8 +167,8 @@ def call_fcn(a,b,rpt,rst,tpt,tst):
             
 #a and b are the materials codes for the first two layers of the system
 #this should contain all allowed combinations of materials in the first two layers (num_lay*(num_lay-1) elements in each array). Do not include the systems with repeating layers since they are not represented in the CNN training dataset.
-a = np.array([0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4])
-b = np.array([1,2,3,4,0,2,3,4,0,1,3,4,0,1,2,4,0,1,2,3])
+a = np.array([0, 0, 0, 1, 1, 2])
+b = np.array([1, 2, 2, 0, 2, 0])
 
 #calculate the RMSE for the theoretical spectra with given parameters
 print('Generating Parallel Pool...\n')
@@ -152,6 +176,6 @@ cores = multiprocessing.cpu_count()
 print('Parallel: %d Found Cores.\n'%(cores))
 print('Generating Solutions...\n')
 #loop through the a and b arrays
-results = Parallel(n_jobs=cores)(delayed(call_fcn)(a[g],b[g],rpt,rst,tpt,tst) for g in range(a.size))
+results = Parallel(n_jobs=cores)(delayed(call_fcn)(a[g], b[g], rpt, rst, tpt, tst) for g in range(a.size))
 #print the results to file to check that everything ran the correct number of iterations
 print(results)
