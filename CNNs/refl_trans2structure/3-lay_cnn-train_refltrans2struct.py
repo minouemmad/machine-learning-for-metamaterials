@@ -112,15 +112,15 @@ def split_data(m1,m2,m3,th,ang,rp,rs,tp,ts,psi,delta,mn,mx):
 
 #read in data from file with the readin_data fcn
 #you need to update the num_mat, ect.. variables with your choices from the generator program
-num_mat = 3
-num_ang = 1
+num_mat = 5
+num_ang = 3
 num_lay = 3
 num_wave = 200
-(ml1,ml2,ml3,th,ang,rp,rs,tp,ts,psi,delta) = readin_data('C:\\Users\\maemmad\\Desktop\\machine-learning-for-metamaterials-1\\data_generation\\data_rte+ni_gen3lay3mat_200000n_v-tma_20240827.h5',num_mat,num_ang,num_lay,num_wave)
+(ml1,ml2,ml3,th,ang,rp,rs,tp,ts,psi,delta) = readin_data('C:\\Users\\maemmad\\Desktop\\machine-learning-for-metamaterials-1\\data_generation\\data_rte+ni_gen3lay5mat_240000n_v-tma_20240828.h5',num_mat,num_ang,num_lay,num_wave)
 
 
 #directort to save data
-dr = '/home/arl92/Documents/newdata/rt2mt/'
+dr = 'C:\\Users\\maemmad\\Desktop\\'
 
 #ranges for the independent datasets, recommended most data in the training set
 #then split the data
@@ -132,68 +132,80 @@ te = va+10000 #test
 (m1v,m2v,m3v,thv,angv,rpv,rsv,tpv,tsv,psiv,deltav) = split_data(ml1,ml2,ml3,th,ang,rp,rs,tp,ts,psi,delta,tr,va)
 (m1e,m2e,m3e,the,ange,rpe,rse,tpee,tse,psie,deltae) = split_data(ml1,ml2,ml3,th,ang,rp,rs,tp,ts,psi,delta,va,te)
 
-# Debugging: print shapes of the data before processing
-print(f"psiv shape: {psiv.shape}, deltar shape: {deltar.shape}")
-print(f"psir shape: {psir.shape}, psiv shape: {psiv.shape}, psie shape: {psie.shape}")
-# Initialize arrays for the data
-tr_p = np.zeros((tr, num_wave, num_ang))
-tr_d = np.zeros((tr, num_wave, num_ang))
-va_p = np.zeros((va-tr, num_wave, num_ang))
-va_d = np.zeros((va-tr, num_wave, num_ang))
-te_p = np.zeros((te-va, num_wave, num_ang))
-te_d = np.zeros((te-va, num_wave, num_ang))
+#the spectra need to be reshaped from [spec(ang1),spec(ang2),...] to [spec;angle] 2-d matrix
+#this does not seem particularly efficent but it works
+# tr_p = np.zeros((tr,num_wave,num_ang)) 
+tr_p = np.zeros((tr,num_wave,num_ang))
+tr_d = np.zeros((tr,num_wave,num_ang))
+p = np.transpose(psir)
+d = np.transpose(deltar)
+for i in range(tr):
+    tr_p[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
+    tr_d[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
 
-# Assign the data directly since num_ang = 1, no need to reshape or transpose
-tr_p[:, :, 0] = psir
-tr_d[:, :, 0] = deltar
-# Check if va_p and va_d are initialized correctly
-if psiv.shape[0] > 0:
-    va_p[:, :, 0] = psiv
-    va_d[:, :, 0] = deltav
-else:
-    print("Warning: psiv is empty, check the data splitting process.")
+va_p = np.zeros((va-tr,num_wave,num_ang))
+va_d = np.zeros((va-tr,num_wave,num_ang))
+p = np.transpose(psiv)
+d = np.transpose(deltav)
+for i in range(va-tr):
+    va_p[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
+    va_d[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
 
-if psie.shape[0] > 0:
-    te_p[:, :, 0] = psie
-    te_d[:, :, 0] = deltae
-else:
-    print("Warning: psie is empty, check the data splitting process.")
-va_p[:, :, 0] = psiv
-va_d[:, :, 0] = deltav
+te_p = np.zeros((te-va,num_wave,num_ang))
+te_d = np.zeros((te-va,num_wave,num_ang))
+p = np.transpose(psie)
+d = np.transpose(deltae)
+for i in range(te-va):
+     te_p[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
+     te_d[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
+   
+tr_rp = np.zeros((tr,num_wave,num_ang))
+tr_rs = np.zeros((tr,num_wave,num_ang))
+p = np.transpose(rpr)
+d = np.transpose(rsr)
+for i in range(tr):
+    tr_rp[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
+    tr_rs[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
 
-te_p[:, :, 0] = psie
-te_d[:, :, 0] = deltae
+va_rp = np.zeros((va-tr,num_wave,num_ang)) 
+va_rs = np.zeros((va-tr,num_wave,num_ang))
+p = np.transpose(rpv)
+d = np.transpose(rsv)
+for i in range(va-tr):
+    va_rp[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
+    va_rs[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
 
-# Repeat the process for rp, rs, tp, and ts data
-tr_rp = np.zeros((tr, num_wave, num_ang))
-tr_rs = np.zeros((tr, num_wave, num_ang))
-va_rp = np.zeros((va-tr, num_wave, num_ang))
-va_rs = np.zeros((va-tr, num_wave, num_ang))
-te_rp = np.zeros((te-va, num_wave, num_ang))
-te_rs = np.zeros((te-va, num_wave, num_ang))
+te_rp = np.zeros((te-va,num_wave,num_ang))
+te_rs = np.zeros((te-va,num_wave,num_ang))
+p = np.transpose(rpe)
+d = np.transpose(rse)
+for i in range(te-va):
+    te_rp[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
+    te_rs[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
+    
+tr_tp = np.zeros((tr,num_wave,num_ang))
+tr_ts = np.zeros((tr,num_wave,num_ang))
+p = np.transpose(tpr)
+d = np.transpose(tsr)
+for i in range(tr):
+    tr_tp[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
+    tr_ts[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
 
-tr_tp = np.zeros((tr, num_wave, num_ang))
-tr_ts = np.zeros((tr, num_wave, num_ang))
-va_tp = np.zeros((va-tr, num_wave, num_ang))
-va_ts = np.zeros((va-tr, num_wave, num_ang))
-te_tp = np.zeros((te-va, num_wave, num_ang))
-te_ts = np.zeros((te-va, num_wave, num_ang))
+va_tp = np.zeros((va-tr,num_wave,num_ang))
+va_ts = np.zeros((va-tr,num_wave,num_ang))
+p = np.transpose(tpv)
+d = np.transpose(tsv)
+for i in range(va-tr):
+    va_tp[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
+    va_ts[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
 
-# Assign the data directly for rp, rs, tp, and ts
-tr_rp[:, :, 0] = rpr
-tr_rs[:, :, 0] = rsr
-tr_tp[:, :, 0] = tpr
-tr_ts[:, :, 0] = tsr
-
-va_rp[:, :, 0] = rpv
-va_rs[:, :, 0] = rsv
-va_tp[:, :, 0] = tpv
-va_ts[:, :, 0] = tsv
-
-te_rp[:, :, 0] = rpe
-te_rs[:, :, 0] = rse
-te_tp[:, :, 0] = tpee
-te_ts[:, :, 0] = tse
+te_tp = np.zeros((te-va,num_wave,num_ang))
+te_ts = np.zeros((te-va,num_wave,num_ang))
+p = np.transpose(tpee)
+d = np.transpose(tse)
+for i in range(te-va):
+    te_tp[i,:,:] = np.transpose(np.reshape(p[:,i],(num_ang,num_wave)))
+    te_ts[i,:,:] = np.transpose(np.reshape(d[:,i],(num_ang,num_wave)))
 
 
 #fuction to build the CNN model 
@@ -295,24 +307,46 @@ def define_model(x):
 
     #output nodes
     #thickness is a number in so there is no activation
-    thout = Dense(3,activation=None)(t)
     #materials guesses a probability array for each material
     #real material is always a normalized array with 1 at the material index i.e. [0 1 0 0 0]
-    mout1 = Dense(5,activation='softmax')(m)
-    mout2 = Dense(5,activation='softmax')(m)
-    mout3 = Dense(5,activation='softmax')(m)
+    # Output layers
+    thout = Dense(3, activation=None, name='thickness_output')(t)
+    mout1 = Dense(5, activation='softmax', name='material_output1')(m)
+    mout2 = Dense(5, activation='softmax', name='material_output2')(m)
+    mout3 = Dense(5, activation='softmax', name='material_output3')(m)
+
 
     #define the model
     model = Model([rpin,rsin,tpin,tsin],[thout,mout1,mout2,mout3])
+    
     # compile the model using the adam optimizer and appropriate loss functions
     #the loss weights can be used to tune the relative importance of output data . 
     #I find that increasing the loss weight for the thickness layer tends to improve fitting,
     #since there loss fuctions are different for materials and thicknesses
-    model.compile(optimizer='adam',loss=['mse','categorical_crossentropy','categorical_crossentropy','categorical_crossentropy'],metrics = ['mse','accuracy'],loss_weights=[2,1,1,1])
+
+    for layer in model.layers:
+        print(f'Layer Name: {layer.name}, Layer Type: {layer.__class__.__name__}')
+
+    model.compile(
+        optimizer='adam',
+        loss={
+            'thickness_output': 'mse',
+            'material_output1': 'categorical_crossentropy',
+            'material_output2': 'categorical_crossentropy',
+            'material_output3': 'categorical_crossentropy'
+        },
+        metrics={
+            'thickness_output': ['mse'],
+            'material_output1': ['accuracy'],
+            'material_output2': ['accuracy'],
+            'material_output3': ['accuracy']
+        },
+        loss_weights=[2, 1, 1, 1]
+    )    
     model.summary()
 
     #model name can be anything you want
-    modname = dr+'general_3lay4matinverse_model_v-tma_convolution_rprstpts_'+str(st)+'step_'+date.strftime("%Y")+date.strftime("%m")+date.strftime("%d")
+    modname = dr+'general_3lay3matinverse_model_v-tma_convolution_rprstpts_'+str(st)+'step_'+date.strftime("%Y")+date.strftime("%m")+date.strftime("%d")
     #print the model summary to file for records, the modelname in log also helps with identificaiton of the log files
     print('-'*57)
     print(modname)
@@ -330,6 +364,15 @@ def define_model(x):
 # x[4] = number of dense nodes #3
 # x[5] = dropout rate
 # x[6] = learning rate scaling factor
+from tensorflow.keras.callbacks import LearningRateScheduler
+def scheduler(epoch, lr):
+    # Example: decay learning rate by 0.5 every 10 epochs
+    if epoch % 10 == 0 and epoch != 0:
+        return lr * 0.5
+    return lr
+
+# Define the learning rate scheduler callback
+lr = LearningRateScheduler(scheduler)
 def fit_fcn(x):
     global modname
     global st
@@ -345,7 +388,15 @@ def fit_fcn(x):
     #fitting based on independent training and validation sets
     #the lr callback is necessary to decay the learning rate as a function of epoch
     #batch size can be tuned as necessary
-    history = model.fit([tr_rp,tr_rs,tr_tp,tr_ts],[thr,m1r,m2r,m3r],epochs=leng,batch_size=128,verbose=2,validation_data = ([va_rp,va_rs,va_tp,va_ts],[thv,m1v,m2v,m3v]),callbacks=[lr])
+    history = model.fit(
+        [tr_rp, tr_rs, tr_tp, tr_ts],
+        [thr, m1r, m2r, m3r],
+        epochs=leng,
+        batch_size=128,
+        verbose=2,
+        validation_data=([va_rp, va_rs, va_tp, va_ts], [thv, m1v, m2v, m3v]),
+        callbacks=[lr]
+)
 
     #save model for later uses
     model.save(modname)
